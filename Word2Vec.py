@@ -30,6 +30,8 @@ for line in corpus:
             print(f'[+] append word - {word}')
 
 # train.
+
+
 for epoch in range(1, 11):
     lr = 0.025 * (1 / epoch)
     for line in tqdm(corpus):
@@ -39,16 +41,19 @@ for epoch in range(1, 11):
 
             # postive sampling.
             grad = (1 - sigmoid(current.dot(current * context))) * current * lr 
-            # negative sampling.
-            for negative_word in random.choices(list(vocab), k=25):
-                grad = sigmoid(current.dot(current * context)) * current * lr 
-
             vocab[line[pos - 1]] -= (1 / 2) * grad
             vocab[line[pos + 1]] -= (1 / 2) * grad
 
-# display the fucking power.
-predict_queen = vocab['man'] - vocab['woman'] + vocab['king']
-print('[+] man:woman = king:queen ... success? %.3f' % cosine_similarity(predict_queen, vocab['queen']))
-print('similar(king, queen) = %.3f' % cosine_similarity(vocab['king'], vocab['queen']))
-print('similar(man, woman) = %.3f' % cosine_similarity(vocab['man'], vocab['woman']))
-print('similar(man, dog) = %.3f' % cosine_similarity(vocab['man'], vocab['dog']))
+            # negative sampling.
+            for negative_word in random.choices(list(vocab), k=25):
+                current = vocab[ negative_word ]
+                grad = sigmoid(current.dot(current * context)) * current * lr 
+                vocab[line[pos - 1]] -= (1 / 2) * grad
+                vocab[line[pos + 1]] -= (1 / 2) * grad
+
+    # display the fucking power.
+    predict_queen = vocab['man'] - vocab['woman'] + vocab['king']
+    print('[+] man:woman = king:queen ... success? %.3f' % cosine_similarity(predict_queen, vocab['queen']))
+    print('similar(king, queen) = %.3f' % cosine_similarity(vocab['king'], vocab['queen']))
+    print('similar(man, woman) = %.3f' % cosine_similarity(vocab['man'], vocab['woman']))
+    print('similar(man, dog) = %.3f' % cosine_similarity(vocab['man'], vocab['dog']))
