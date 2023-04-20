@@ -1,4 +1,5 @@
 # Word2Vec written in pure Numpy (demo)
+# SKip-Gram Module
 # author: aaaddress1@chroot.org
 import re, random
 import numpy as np
