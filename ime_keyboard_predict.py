@@ -1,5 +1,5 @@
-# Word2Vec to Predict Next Word (like IME)
-# idea: https://jalammar.github.io/illustrated-word2vec/
+# Word2Vec written in pure Numpy (demo)
+# CBOW Module
 # author: aaaddress1@chroot.org
 import re, random, pickle
 import numpy as np
@@ -23,55 +23,36 @@ for x in data.splitlines():
         corpus.append(line)
 
 # vocab.
-
-
-try:
-    fr = open("vocab.bin", "rb")
-    vocab = pickle.load(fr)
-    btrain = True
-except:
-    btrain = False
-    vocab = {}
-    for line in corpus:
-        for word in line:
-            if not word in vocab:
-                vocab[word] = make_small_ndarray(50)
-                print(f'[+] append word - {word}')
+vocab = {}
+for line in corpus:
+    for word in line:
+        if not word in vocab:
+            vocab[word] = make_small_ndarray(100)
+            #print(f'[+] append word - {word}')
 
 
 # train.
-if not btrain or 'Y' == input("train more? (Y/N): "):
-    for epoch in range(1, 5):
-        lr = 0.25 * (1 / epoch)
-        for line in tqdm(corpus):
-            for pos in range(1, len(line) - 1):
-                current = vocab[ line[pos + 1] ]
-                context = vocab[line[pos - 1]] + vocab[line[pos]] 
+for epoch in range(1, 2):
+    lr = 0.025 * (1 / epoch)
+    for line in tqdm(corpus):
+        for pos in range(1, len(line) - 1):
+            current = vocab[ line[pos] ]
+            context = ( vocab[line[pos - 1]] + vocab[line[pos + 1]] )
 
-                # postive sampling.
-                grad = (1 - sigmoid(current.dot(current * context))) * current * lr 
-                vocab[line[pos - 1]] -= (1 / 2) * grad
-                vocab[line[pos + 1]] -= (1 / 2) * grad
+            # postive sampling.
+            grad = (1 - sigmoid(current.dot(current * context))) * context * lr 
+            vocab[line[pos]] -=  grad
 
-                # negative sampling.
-                for negative_word in random.choices(list(vocab), k=25):
-                    current = vocab[ negative_word ]
-                    grad = sigmoid(current.dot(current * context)) * current * lr 
-                    vocab[line[pos - 1]] -= (1 / 2) * grad
-                    vocab[line[pos + 1]] -= (1 / 2) * grad
+            # negative sampling.
+            for _ in range(5):
+                negative_1, negative_2 = random.choices(list(vocab), k=2)
+                context = ( vocab[negative_1] + vocab[negative_2] )
+                grad = (sigmoid(current.dot(current * context))) * context * lr 
+                vocab[line[pos]] -=  grad
 
-def findSimilarWord_byVec(in_vector, top_k = 5):
-    tmp_score, tmp_token = -99, None
-    ret = {tk : cosine_similarity(in_vector, vocab[tk]) for tk in vocab}
-    ret = sorted(ret.items(), key=lambda item: item[1], reverse=True)[:top_k]
-    return ret
-
-def predict_nextWord(sentence_of2words, top_k = 10):
-    word1, word2 = sentence_of2words.split()[:2]
-    rlist= findSimilarWord_byVec( (vocab[word1.lower()] + vocab[word2.lower()]) *2 , top_k )
-    print( '\n'.join([  f"{elmt[0]}({elmt[1]:.2f})" for elmt in rlist]) )
-
-pickle.dump(vocab, open("vocab.bin", "wb"))
-
-import IPython
-IPython.embed()
+# display the fucking power.
+predict_queen = vocab['man'] - vocab['woman'] + vocab['king']
+print('[+] man:woman = king:queen ... success? %.3f' % cosine_similarity(predict_queen, vocab['queen']))
+print('similar(king, queen) = %.3f' % cosine_similarity(vocab['king'], vocab['queen']))
+print('similar(man, woman) = %.3f' % cosine_similarity(vocab['man'], vocab['woman']))
+print('similar(man, dog) = %.3f' % cosine_similarity(vocab['man'], vocab['dog']))
